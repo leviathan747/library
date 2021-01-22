@@ -27,6 +27,7 @@ import DataMatrixReader from './datamatrix/DataMatrixReader';
 import NotFoundException from './NotFoundException';
 import PDF417Reader from './pdf417/PDF417Reader';
 import ReaderException from './ReaderException';
+import MaxiCodeReader from './maxicode/MaxicodeReader';
 
 /*namespace com.google.zxing {*/
 
@@ -138,9 +139,9 @@ export default class MultiFormatReader implements Reader {
             if (formats.includes(BarcodeFormat.PDF_417)) {
                readers.push(new PDF417Reader());
             }
-            // if (formats.includes(BarcodeFormat.MAXICODE)) {
-            //    readers.push(new MaxiCodeReader())
-            // }
+            if (formats.includes(BarcodeFormat.MAXICODE)) {
+                readers.push(new MaxiCodeReader())
+            }
             // At end in "try harder" mode
             if (addOneDReader && tryHarder) {
               readers.push(new MultiFormatOneDReader(hints));
@@ -155,7 +156,7 @@ export default class MultiFormatReader implements Reader {
             readers.push(new DataMatrixReader());
             readers.push(new AztecReader());
             readers.push(new PDF417Reader());
-            // readers.push(new MaxiCodeReader())
+            readers.push(new MaxiCodeReader())
 
             if (tryHarder) {
                readers.push(new MultiFormatOneDReader(hints));

@@ -17,7 +17,6 @@
 import BarcodeFormat from '../BarcodeFormat';
 import BinaryBitmap from '../BinaryBitmap';
 import BitMatrix from '../common/BitMatrix';
-import DecoderResult from '../common/DecoderResult';
 import DecodeHintType from '../DecodeHintType';
 import NotFoundException from '../NotFoundException';
 import Reader from '../Reader';
@@ -26,23 +25,21 @@ import ResultMetadataType from '../ResultMetadataType';
 import ResultPoint from '../ResultPoint';
 import System from '../util/System';
 import Decoder from './decoder/Decoder';
-import Detector from './detector/Detector';
 
-
+const MATRIX_HEIGHT = 33;
+const MATRIX_WIDTH = 30;
 /**
  * This implementation can detect and decode a MaxiCode in an image.
  */
 export default class MaxiCodeReader implements Reader {
 
   private static NO_POINTS: ResultPoint[] = [];
-  private static MATRIX_WIDTH: number = 30;
-  private static MATRIX_HEIGHT: number = 33;
 
   private decoder: Decoder = new Decoder();
 
   public decode(image: BinaryBitmap, hints: Map<DecodeHintType, any> | null = null): Result {
-    const bits: BitMatrix = this.extractPureBits(image.getBlackMatrix());
-    const decoderResult = this.decoder.decode(bits, hints);
+    const bits: BitMatrix = MaxiCodeReader.extractPureBits(image.getBlackMatrix());
+    const decoderResult = this.decoder.decode(bits);
     const result: Result = new Result(
       decoderResult.getText(),
       decoderResult.getRawBytes(),
@@ -52,7 +49,7 @@ export default class MaxiCodeReader implements Reader {
       System.currentTimeMillis()
     );
 
-    String ecLevel = decoderResult.getECLevel();
+    const ecLevel: String = decoderResult.getECLevel();
     if (ecLevel != null) {
       result.putMetadata(ResultMetadataType.ERROR_CORRECTION_LEVEL, ecLevel);
     }
@@ -70,26 +67,26 @@ export default class MaxiCodeReader implements Reader {
    * around it. This is a specialized method that works exceptionally fast in this special
    * case.
    */
-  private static BitMatrix extractPureBits(image: BitMatrix): BitMatrix {
+  private static extractPureBits(image: BitMatrix): BitMatrix {
 
-    enclosingRectangle: Int32Array[] = image.getEnclosingRectangle();
+    const enclosingRectangle: Int32Array = image.getEnclosingRectangle();
     if (enclosingRectangle == null) {
       throw NotFoundException.getNotFoundInstance();
     }
 
-    int left = enclosingRectangle[0];
-    int top = enclosingRectangle[1];
-    int width = enclosingRectangle[2];
-    int height = enclosingRectangle[3];
+    const left = enclosingRectangle[0];
+    const top = enclosingRectangle[1];
+    const width = enclosingRectangle[2];
+    const height = enclosingRectangle[3];
 
     // Now just read off the bits
-    BitMatrix bits = new BitMatrix(MATRIX_WIDTH, MATRIX_HEIGHT);
-    for (int y = 0; y < MATRIX_HEIGHT; y++) {
-      int iy = top + (y * height + height / 2) / MATRIX_HEIGHT;
-      for (int x = 0; x < MATRIX_WIDTH; x++) {
+    const bits: BitMatrix = new BitMatrix(MATRIX_WIDTH, MATRIX_HEIGHT);
+    for (let y = 0; y < MATRIX_HEIGHT; y++) {
+      const iy = top + (y * height + height / 2) / MATRIX_HEIGHT;
+      for (let x = 0; x < MATRIX_WIDTH; x++) {
         // srowen: I don't quite understand why the formula below is necessary, but it
         // can walk off the image if left + width = the right boundary. So cap it.
-        int ix = left + Math.min(
+        const ix = left + Math.min(
           (x * width + width / 2 + (y & 0x01) * width / 2) / MATRIX_WIDTH,
           width);
         if (image.get(ix, iy)) {
@@ -99,5 +96,4 @@ export default class MaxiCodeReader implements Reader {
     }
     return bits;
   }
-
 }

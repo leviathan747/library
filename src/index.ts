@@ -72,6 +72,8 @@ export { default as ReedSolomonEncoder } from './core/common/reedsolomon/ReedSol
 export { default as DataMatrixReader } from './core/datamatrix/DataMatrixReader';
 export { default as DataMatrixDecodedBitStreamParser } from './core/datamatrix/decoder/DecodedBitStreamParser';
 
+export { default as MaxicodeDecodedBitStreamParser } from './core/maxicode/decoder/DecodedBitStreamParser';
+
 // core/pdf417
 export { default as PDF417Reader } from './core/pdf417/PDF417Reader';
 export { default as PDF417ResultMetadata } from './core/pdf417/PDF417ResultMetadata';
