@@ -17,6 +17,7 @@
 import BarcodeFormat from '../BarcodeFormat';
 import BinaryBitmap from '../BinaryBitmap';
 import BitMatrix from '../common/BitMatrix';
+import DecoderResult from '../common/DecoderResult';
 import DecodeHintType from '../DecodeHintType';
 import NotFoundException from '../NotFoundException';
 import Reader from '../Reader';
@@ -25,6 +26,7 @@ import ResultMetadataType from '../ResultMetadataType';
 import ResultPoint from '../ResultPoint';
 import System from '../util/System';
 import Decoder from './decoder/Decoder';
+import Detector from './detector/Detector';
 
 const MATRIX_HEIGHT = 33;
 const MATRIX_WIDTH = 30;
@@ -38,13 +40,23 @@ export default class MaxiCodeReader implements Reader {
   private decoder: Decoder = new Decoder();
 
   public decode(image: BinaryBitmap, hints: Map<DecodeHintType, any> | null = null): Result {
-    const bits: BitMatrix = MaxiCodeReader.extractPureBits(image.getBlackMatrix());
-    const decoderResult = this.decoder.decode(bits);
+    let decoderResult: DecoderResult;
+    let points: ResultPoint[];
+
+    if (hints != null && hints.has(DecodeHintType.PURE_BARCODE)) {
+      const bits: BitMatrix = MaxiCodeReader.extractPureBits(image.getBlackMatrix());
+      decoderResult = this.decoder.decode(bits);
+      points = MaxiCodeReader.NO_POINTS;
+    } else {
+      const detectorResult = new Detector(image.getBlackMatrix()).detect();
+      decoderResult = this.decoder.decode(detectorResult.getBits());
+      points = detectorResult.getPoints();
+    }
     const result: Result = new Result(
       decoderResult.getText(),
       decoderResult.getRawBytes(),
       decoderResult.getNumBits(),
-      MaxiCodeReader.NO_POINTS,
+      points,
       BarcodeFormat.MAXICODE,
       System.currentTimeMillis()
     );

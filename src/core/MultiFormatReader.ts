@@ -27,7 +27,7 @@ import DataMatrixReader from './datamatrix/DataMatrixReader';
 import NotFoundException from './NotFoundException';
 import PDF417Reader from './pdf417/PDF417Reader';
 import ReaderException from './ReaderException';
-import MaxiCodeReader from './maxicode/MaxicodeReader';
+import MaxiCodeReader from './maxicode/MaxiCodeReader';
 
 /*namespace com.google.zxing {*/
 
