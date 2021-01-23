@@ -93,7 +93,7 @@ export default class DecodedBitStreamParser {
 
     public static getBit(bit: number, bytes: Uint8Array): number {
         bit--;
-        return (bytes[bit / 6] & (1 << (5 - (bit % 6)))) == 0 ? 0 : 1;
+        return (bytes[Math.floor(bit / 6)] & (1 << (5 - (bit % 6)))) == 0 ? 0 : 1;
     }
 
     public static getInt(bytes: Uint8Array, x: byte[]): number {

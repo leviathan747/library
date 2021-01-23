@@ -28,14 +28,14 @@ import System from '../util/System';
 import Decoder from './decoder/Decoder';
 import Detector from './detector/Detector';
 
-const MATRIX_HEIGHT = 33;
-const MATRIX_WIDTH = 30;
 /**
  * This implementation can detect and decode a MaxiCode in an image.
  */
 export default class MaxiCodeReader implements Reader {
 
   private static NO_POINTS: ResultPoint[] = [];
+  private static MATRIX_HEIGHT: number = 33;
+  private static MATRIX_WIDTH: number = 30;
 
   private decoder: Decoder = new Decoder();
 
@@ -82,8 +82,8 @@ export default class MaxiCodeReader implements Reader {
   private static extractPureBits(image: BitMatrix): BitMatrix {
 
     const enclosingRectangle: Int32Array = image.getEnclosingRectangle();
-    if (enclosingRectangle == null) {
-      throw NotFoundException.getNotFoundInstance();
+    if (enclosingRectangle === null) {
+      throw new NotFoundException();
     }
 
     const left = enclosingRectangle[0];
@@ -92,14 +92,14 @@ export default class MaxiCodeReader implements Reader {
     const height = enclosingRectangle[3];
 
     // Now just read off the bits
-    const bits: BitMatrix = new BitMatrix(MATRIX_WIDTH, MATRIX_HEIGHT);
-    for (let y = 0; y < MATRIX_HEIGHT; y++) {
-      const iy = top + (y * height + height / 2) / MATRIX_HEIGHT;
-      for (let x = 0; x < MATRIX_WIDTH; x++) {
+    const bits: BitMatrix = new BitMatrix(MaxiCodeReader.MATRIX_WIDTH, MaxiCodeReader.MATRIX_HEIGHT);
+    for (let y = 0; y < MaxiCodeReader.MATRIX_HEIGHT; y++) {
+      const iy = top + Math.floor((y * height + Math.floor(height / 2)) / MaxiCodeReader.MATRIX_HEIGHT);
+      for (let x = 0; x < MaxiCodeReader.MATRIX_WIDTH; x++) {
         // srowen: I don't quite understand why the formula below is necessary, but it
         // can walk off the image if left + width = the right boundary. So cap it.
         const ix = left + Math.min(
-          (x * width + width / 2 + (y & 0x01) * width / 2) / MATRIX_WIDTH,
+          Math.floor((x * width + Math.floor(width / 2) + (y & 0x01) * Math.floor(width / 2)) / MaxiCodeReader.MATRIX_WIDTH),
           width);
         if (image.get(ix, iy)) {
           bits.set(x, y);
@@ -107,5 +107,6 @@ export default class MaxiCodeReader implements Reader {
       }
     }
     return bits;
+
   }
 }

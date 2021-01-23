@@ -18,6 +18,7 @@ import BitMatrix from '../../common/BitMatrix';
 import DecoderResult from '../../common/DecoderResult';
 import GenericGF from '../../common/reedsolomon/GenericGF';
 import ReedSolomonDecoder from '../../common/reedsolomon/ReedSolomonDecoder';
+import System from '../../util/System';
 import DecodedBitStreamParser from './DecodedBitStreamParser';
 
 import ChecksumException from '../../ChecksumException';
@@ -62,12 +63,8 @@ export default class Decoder {
         throw new FormatException();
     }
 
-    for (let i = 0, s = 0, d = 0; i < 10; i++) {  // arraycopy
-      datawords[d+i] = codewords[s+i];
-    }
-    for (let i = 0, s = 20, d = 10; i < datawords.length - 10; i++) {  // arraycopy
-      datawords[d+i] = codewords[s+i];
-    }
+    System.arraycopy(codewords, 0, datawords, 0, 10);
+    System.arraycopy(codewords, 20, datawords, 10, datawords.length - 10);
 
     return DecodedBitStreamParser.decode(datawords, mode);
   }
@@ -84,14 +81,14 @@ export default class Decoder {
     const divisor = mode === Decoder.ALL ? 1 : 2;
 
     // First read into an array of ints
-    const codewordsInts: Int32Array = new Int32Array(codewords / divisor);
+    const codewordsInts: Int32Array = new Int32Array(Math.floor(codewords / divisor));
     for (let i = 0; i < codewords; i++) {
       if ((mode === Decoder.ALL) || (i % 2 === (mode - 1))) {
-        codewordsInts[i / divisor] = codewordBytes[i + start] & 0xFF;
+        codewordsInts[Math.floor(i / divisor)] = codewordBytes[i + start] & 0xFF;
       }
     }
     try {
-      this.rsDecoder.decode(codewordsInts, ecCodewords / divisor);
+      this.rsDecoder.decode(codewordsInts, Math.floor(ecCodewords / divisor));
     } catch (ignored) {
       throw new ChecksumException();
     }
@@ -99,7 +96,7 @@ export default class Decoder {
     // We don't care about errors in the error-correction codewords
     for (let i = 0; i < dataCodewords; i++) {
       if ((mode === Decoder.ALL) || (i % 2 === (mode - 1))) {
-        codewordBytes[i + start] = <byte>codewordsInts[i / divisor];
+        codewordBytes[i + start] = <byte>codewordsInts[Math.floor(i / divisor)];
       }
     }
   }

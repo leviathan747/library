@@ -56,7 +56,7 @@ export default class BitMatrixParser {
       for (let x = 0; x < width; x++) {
         const bit = bitnrRow[x];
         if (bit >= 0 && this.bitMatrix.get(x, y)) {
-          result[bit / 6] |= <byte>(1 << (5 - (bit % 6)));
+          result[Math.floor(bit / 6)] |= <byte>(1 << (5 - (bit % 6)));
         }
       }
     }
