@@ -20,19 +20,17 @@ import GenericGF from '../../common/reedsolomon/GenericGF';
 import ReedSolomonDecoder from '../../common/reedsolomon/ReedSolomonDecoder';
 import DecodedBitStreamParser from './DecodedBitStreamParser';
 
-import IllegalStateException from '../../IllegalStateException';
+import ChecksumException from '../../ChecksumException';
 import FormatException from '../../FormatException';
 import BitMatrixParser from './BitMatrixParser';
-import StringUtils from '../../common/StringUtils';
-import Integer from '../../util/Integer';
 import { int, byte } from '../../../customTypings';
 
 
 export default class Decoder {
 
-  private ALL = 0;
-  private EVEN = 1;
-  private ODD = 2;
+  private static ALL = 0;
+  private static EVEN = 1;
+  private static ODD = 2;
 
   private rsDecoder: ReedSolomonDecoder;
 
@@ -43,18 +41,67 @@ export default class Decoder {
   public decode(bits: BitMatrix): DecoderResult {
     const parser: BitMatrixParser = new BitMatrixParser(bits);
     let codewords = parser.readCodewords();
+
+    this.correctErrors(codewords, 0, 10, 10, Decoder.ALL);
     const mode: number = codewords[0] & 0x0F;
     let datawords: Uint8Array;
-
-    for(let i = 0; i < 10; i++) {
-        datawords[i] = codewords[i];
+    switch (mode) {
+      case 2:
+      case 3:
+      case 4:
+        this.correctErrors(codewords, 20, 84, 40, Decoder.EVEN);
+        this.correctErrors(codewords, 20, 84, 40, Decoder.ODD);
+        datawords = new Uint8Array(94);
+        break;
+      case 5:
+        this.correctErrors(codewords, 20, 68, 56, Decoder.EVEN);
+        this.correctErrors(codewords, 20, 68, 56, Decoder.ODD);
+        datawords = new Uint8Array(78);
+        break;
+      default:
+        throw new FormatException();
     }
 
-    for(let x = 20; x < 30; x++) {
-        datawords[x - 10] = codewords[x];
+    for (let i = 0, s = 0, d = 0; i < 10; i++) {  // arraycopy
+      datawords[d+i] = codewords[s+i];
+    }
+    for (let i = 0, s = 20, d = 10; i < datawords.length - 10; i++) {  // arraycopy
+      datawords[d+i] = codewords[s+i];
     }
 
     return DecodedBitStreamParser.decode(datawords, mode);
+  }
+
+  private correctErrors(codewordBytes: Uint8Array,
+                 start: number,
+                 dataCodewords: number,
+                 ecCodewords: number,
+                 mode: number): void {
+
+    const codewords = dataCodewords + ecCodewords;
+
+    // in EVEN or ODD mode only half the codewords
+    const divisor = mode === Decoder.ALL ? 1 : 2;
+
+    // First read into an array of ints
+    const codewordsInts: Int32Array = new Int32Array(codewords / divisor);
+    for (let i = 0; i < codewords; i++) {
+      if ((mode === Decoder.ALL) || (i % 2 === (mode - 1))) {
+        codewordsInts[i / divisor] = codewordBytes[i + start] & 0xFF;
+      }
+    }
+    try {
+      this.rsDecoder.decode(codewordsInts, ecCodewords / divisor);
+    } catch (ignored) {
+      throw new ChecksumException();
+    }
+    // Copy back into array of bytes -- only need to worry about the bytes that were data
+    // We don't care about errors in the error-correction codewords
+    for (let i = 0; i < dataCodewords; i++) {
+      if ((mode === Decoder.ALL) || (i % 2 === (mode - 1))) {
+        codewordBytes[i + start] = <byte>codewordsInts[i / divisor];
+      }
+    }
   }
 
 }
